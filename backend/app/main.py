@@ -214,13 +214,15 @@ def analyze_rules(text: str, category: str):
         "manufacturer_or_packer": field([r"(?:manufacturer|manufactured|man\w{2,}|mfg|mfd)\s+by\s*[:\-]?\s*([^\n]+)", r"(?:packer|importer)\s*[:\-]?\s*([^\n]+)"], t),
         "address": field([r"(?:address|addr\.?|registered office)\s*[:\-]?\s*(.+)"], t),
         "net_quantity": field([r"(?:net quantity|net qty|quantity|net wt\.?|net volume)\s*[:\-]?\s*([\w. ]+(?:kg|g|mg|l|ml|cm|m)?)[\s$]*"], t),
-        "mrp": field([r"(?:mrp|maximum retail price)[^\n]*(?:see|refer)\s+([^\n]+)", r"(?:mrp|maximum retail price)\s*[:\-]?\s*(?:rs\.?|₹)?\s*([\d,.]+)"], t),
+        "mrp": field([r"(?:m\.?\s*r\.?\s*p\.?|maximum\s+retail\s+price)[^\n]{0,80}(?:rs\.?|inr|₹)\s*([\d]+(?:[,.]\d{1,2})?)", r"(?:m\.?\s*r\.?\s*p\.?|maximum\s+retail\s+price)\s*[:\-]?\s*([\d]+(?:[,.]\d{1,2})?)", r"(?:m\.?\s*r\.?\s*p\.?|maximum\s+retail\s+price)[^\n]*(?:see|refer)\s+([^\n]+)"], t),
         "date": field([r"(?:for\s+)?date of manufacture[^\n]*(?:see|refer)\s+([^\n]+)", r"(?:best before|expiry date|use by|mfg\.?\s*date|mfd\.?\s*date|packed on|packing date)\s*[:\-]?\s*(.+)", r"\b(?:mfg|mfd|pkd)\.?\s*(?:on|date)?\s*[:\-]\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}[/-]\d{2,4}|[A-Za-z]{3,9}\s+\d{4})"], t),
         "consumer_care": field([r"(?:contact\s+)?consumer\s+(?:response\s+)?(?:coordinator|care|complaints?)[^\n]*\n\s*([^\n]+)", r"(?:consumer care|customer care|consumer complaints|care)\s*[:\-]?\s*([^\n]+)"], t),
         "country_of_origin": field([r"(?:country of origin|made in|country)\s*[:\-]?\s*(.+)"], t),
         "calories": field([r"(?:calories|energy)\s*[:\-]?\s*([\d,.]+\s*(?:kcal|calories|kj)?)"], t),
     }
-    if not fields["mrp"] and re.search(r"\bmrp\b[\s\S]{0,160}(?:see|refer)\s+neck", t, re.I):
+    if re.search(r"m\.?\s*r\.?\s*p\.?[\s\S]{0,160}(?:see|refer)\s+neck", t, re.I) and (not fields["mrp"] or fields["mrp"].strip().lower() == "neck"):
+        fields["mrp"] = "See neck"
+    elif fields["mrp"] and re.search(r"(?:see|refer)\s+neck", fields["mrp"], re.I):
         fields["mrp"] = "See neck"
     if re.search(r"date of manufacture[\s\S]{0,160}(?:see|refer)\s+neck", t, re.I) and (not fields["date"] or "batch" in fields["date"].lower()):
         fields["date"] = "See neck"
