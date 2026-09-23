@@ -55,9 +55,14 @@ function App() {
 
   function logout() { localStorage.removeItem('smartpack_token'); setToken(''); setHistory([]); setAnalysis(null) }
 
+  function handleUnauthorized(response) {
+    if (response.status === 401) logout()
+    return response
+  }
+
   async function loadHistory() {
     try {
-      const r = await fetch(`${API}/api/inspections`, { headers: authHeaders })
+      const r = handleUnauthorized(await fetch(`${API}/api/inspections`, { headers: authHeaders }))
       if (r.ok) setHistory(await r.json())
     } catch (_) {}
   }
@@ -138,7 +143,7 @@ function App() {
     setLoading(true); setError('')
     try {
       const fd = new FormData(); fd.append('file', file)
-      const r = await fetch(`${API}/api/analyze?lang=${lang}`, { method: 'POST', headers: authHeaders, body: fd })
+      const r = handleUnauthorized(await fetch(`${API}/api/analyze?lang=${lang}`, { method: 'POST', headers: authHeaders, body: fd }))
       const data = await r.json()
       if (!r.ok) throw new Error(data.detail || 'Analysis failed')
       setAnalysis(data); await loadHistory(); setPage('Inspection')
