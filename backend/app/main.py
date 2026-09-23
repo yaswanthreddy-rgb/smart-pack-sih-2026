@@ -88,6 +88,9 @@ ocr_cache = {}
 class LoginRequest(BaseModel):
     username: str
     password: str
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
 
 
 def token_for(user: User):
@@ -335,6 +338,23 @@ def login(body: LoginRequest):
         if not user or not pwd_context.verify(body.password, user.password_hash):
             raise HTTPException(401, "Invalid username or password")
         return {"access_token": token_for(user), "token_type": "bearer", "role": user.role, "username": user.username}
+    finally:
+        db.close()
+@app.post("/api/auth/register")
+def register(body: RegisterRequest):
+    username = body.username.strip()
+    if len(username) < 3 or len(username) > 100:
+        raise HTTPException(400, "Username must be between 3 and 100 characters.")
+    if len(body.password) < 8:
+        raise HTTPException(400, "Password must contain at least 8 characters.")
+    db = SessionLocal()
+    try:
+        if db.query(User).filter_by(username=username).first():
+            raise HTTPException(409, "Username already exists.")
+        user = User(username=username, password_hash=pwd_context.hash(body.password), role="INSPECTOR")
+        db.add(user)
+        db.commit()
+        return {"message": "Account created. You can now sign in."}
     finally:
         db.close()
 

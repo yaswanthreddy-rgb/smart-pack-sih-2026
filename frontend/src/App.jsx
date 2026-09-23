@@ -20,6 +20,7 @@ function App() {
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState('')
   const [loggingIn, setLoggingIn] = useState(false)
+    const [authMode, setAuthMode] = useState('login')
   const [cameraOpen, setCameraOpen] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -29,6 +30,16 @@ function App() {
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
 
   async function login(e) {
+
+      async function register(e) {
+        e.preventDefault(); setLoggingIn(true); setLoginError('')
+        try {
+          const r = await fetch(`${API}/api/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) })
+          const data = await r.json()
+          if (!r.ok) throw new Error(data.detail || 'Registration failed')
+          setAuthMode('login'); setLoginError('Account created. Sign in with your new account.'); setPassword('')
+        } catch (e) { setLoginError(e.message) } finally { setLoggingIn(false) }
+      }
     e.preventDefault(); setLoggingIn(true); setLoginError('')
     try {
       const r = await fetch(`${API}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) })
@@ -103,7 +114,7 @@ function App() {
     if (cameraOpen && videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current
   }, [cameraOpen])
 
-  if (!token) return <Login username={username} password={password} setUsername={setUsername} setPassword={setPassword} loginError={loginError} loggingIn={loggingIn} onSubmit={login} />
+  if (!token) return <Login mode={authMode} setMode={setAuthMode} username={username} password={password} setUsername={setUsername} setPassword={setPassword} loginError={loginError} loggingIn={loggingIn} onSubmit={authMode === 'login' ? login : register} />
 
   function captureCamera() {
     const video = videoRef.current
@@ -159,7 +170,7 @@ function App() {
 }
 
 function Stat({title,value}){return <div className="stat"><span>{title}</span><strong>{value}</strong></div>}
-function Login({username,password,setUsername,setPassword,loginError,loggingIn,onSubmit}){return <main className="login-shell"><form className="login-panel" onSubmit={onSubmit}><div className="brandmark">S</div><div className="eyebrow">SMART PACK</div><h1>Inspector sign in</h1><p className="muted">Access compliance inspections, evidence and reports.</p><label>Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username"/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" required/></label>{loginError&&<div className="error">{loginError}</div>}<button className="primary big" disabled={loggingIn}>{loggingIn?'Signing in…':'Sign in'}</button></form></main>}
+function Login({mode,setMode,username,password,setUsername,setPassword,loginError,loggingIn,onSubmit}){const registering=mode==='register'; return <main className="login-shell"><form className="login-panel" onSubmit={onSubmit}><div className="brandmark">S</div><div className="eyebrow">SMART PACK</div><h1>{registering?'Create inspector account':'Inspector sign in'}</h1><p className="muted">{registering?'Create an account to manage inspections and reports.':'Access compliance inspections, evidence and reports.'}</p><label>Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" minLength="3" required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={registering?'new-password':'current-password'} minLength="8" required/></label>{loginError&&<div className="error">{loginError}</div>}<button className="primary big" disabled={loggingIn}>{loggingIn?(registering?'Creating account…':'Signing in…'):(registering?'Create account':'Sign in')}</button><button type="button" className="auth-switch" onClick={()=>{setMode(registering?'login':'register');setPassword('');}}>{registering?'Already have an account? Sign in':'Need an account? Register'}</button></form></main>}
 function PanelHead({title,action,onClick}){return <div className="panelhead"><h3>{title}</h3>{action&&<button onClick={onClick}>{action}</button>}</div>}
 function Row({item,onClick}){return <button className="row" onClick={onClick}><div className="dot">⌕</div><div className="rowmain"><b>{item.inspection_code || `#${item.id}`} · {item.category}</b><span>{new Date(item.created_at).toLocaleString()} · score {item.score}%</span></div><Badge status={item.status}/><span className="arrow">→</span></button>}
 function Empty({text}){return <div className="empty">{text}</div>}
