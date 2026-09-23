@@ -116,14 +116,30 @@ def get_ocr(lang: str):
     if key in ocr_cache:
         return ocr_cache[key]
     try:
+        os.environ.setdefault("DISABLE_MODEL_SOURCE_CHECK", "True")
         from paddleocr import PaddleOCR
-        # PP-OCRv5 supports English plus the selected Indian language.
-        engine = PaddleOCR(lang=key)
+        # Skip expensive document correction for package labels and use the mobile detector.
+        options = {
+            "lang": key,
+            "text_detection_model_name": "PP-OCRv5_mobile_det",
+            "use_doc_orientation_classify": False,
+            "use_doc_unwarping": False,
+            "use_textline_orientation": False,
+            "text_det_limit_side_len": 960,
+        }
+        if key == "en":
+            options["text_recognition_model_name"] = "en_PP-OCRv5_mobile_rec"
+        engine = PaddleOCR(**options)
         ocr_cache[key] = engine
         return engine
     except Exception:
         ocr_cache[key] = False
         return False
+
+
+    @app.on_event("startup")
+    def warm_english_ocr():
+        get_ocr("en")
 
 
 def preprocess_image(path: Path):
