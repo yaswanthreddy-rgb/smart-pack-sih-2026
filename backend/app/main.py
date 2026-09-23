@@ -340,6 +340,11 @@ def login(body: LoginRequest):
         return {"access_token": token_for(user), "token_type": "bearer", "role": user.role, "username": user.username}
     finally:
         db.close()
+
+@app.get("/api/auth/login")
+def login_info():
+    return {"message": "Use POST /api/auth/login with username and password."}
+
 @app.post("/api/auth/register")
 def register(body: RegisterRequest):
     username = body.username.strip()
@@ -357,6 +362,10 @@ def register(body: RegisterRequest):
         return {"message": "Account created. You can now sign in."}
     finally:
         db.close()
+
+@app.get("/api/auth/register")
+def register_info():
+    return {"message": "Use POST /api/auth/register with username and password."}
 
 @app.get("/api/auth/me")
 def me(user=Depends(current_user)):
