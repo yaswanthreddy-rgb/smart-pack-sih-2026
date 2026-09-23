@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API = import.meta.env.VITE_API_URL || (
+  window.location.port === '8080'
+    ? `${window.location.protocol}//${window.location.hostname}:8000`
+    : ''
+)
 
 function Badge({ status }) {
   const cls = String(status || '').toLowerCase().replaceAll(' ', '-')
