@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: smartpack
+      POSTGRES_USER: smartpack
+      POSTGRES_PASSWORD: smartpack
+    volumes:
+      - smartpack_db:/var/lib/postgresql/data
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg2://smartpack:smartpack@db:5432/smartpack
+      JWT_SECRET: local-smartpack-secret
+      DEMO_MODE: "false"
+      CORS_ORIGINS: "*"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+volumes:
+  smartpack_db:

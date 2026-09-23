@@ -1,0 +1,11 @@
+.env
+.venv/
+venv/
+node_modules/
+dist/
+__pycache__/
+*.pyc
+backend/data/uploads/*
+backend/data/annotated/*
+backend/reports/*
+backend/smartpack.db

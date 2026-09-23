@@ -1,0 +1,6 @@
+__pycache__
+*.pyc
+smartpack.db
+data/uploads/*
+data/annotated/*
+reports/*
