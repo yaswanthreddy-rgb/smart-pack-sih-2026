@@ -146,12 +146,15 @@ def preprocess_image(path: Path):
     img = cv2.imread(str(path))
     if img is None:
         raise ValueError("Unable to read image")
+    original_height, original_width = img.shape[:2]
+    scale = min(1.0, 960 / max(original_width, original_height))
+    if scale < 1.0:
+        img = cv2.resize(img, (round(original_width * scale), round(original_height * scale)), interpolation=cv2.INTER_AREA)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    denoise = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
-    enhanced = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(denoise)
+    enhanced = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(gray)
     out = path.with_name(path.stem + "_preprocessed.jpg")
     cv2.imwrite(str(out), enhanced)
-    return out, img
+    return out, scale
 
 
 def extract_ocr(path: Path, lang: str):
@@ -159,7 +162,7 @@ def extract_ocr(path: Path, lang: str):
     if not ocr:
         return "", 0.0, []
     try:
-        pre, _ = preprocess_image(path)
+        pre, scale = preprocess_image(path)
         result = ocr.predict(str(pre))
         texts, scores, boxes = [], [], []
         for res in result:
@@ -177,6 +180,8 @@ def extract_ocr(path: Path, lang: str):
         for idx, text in enumerate(texts):
             score = scores[idx] if idx < len(scores) else 0.0
             box = boxes[idx] if idx < len(boxes) else None
+            if box and scale < 1.0:
+                box = (np.array(box, dtype=float) / scale).tolist()
             lines.append({"text": text, "confidence": round(score, 4), "box": box})
         joined = "\n".join(texts)
         confidence = sum(scores) / len(scores) if scores else 0.0
